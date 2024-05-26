@@ -16,7 +16,7 @@ import okhttp3.FormBody
 import java.net.URI
 
 class BanglaPlexProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://banglaplex.fun"
+    override var mainUrl = "https://banglaplex.art"
     override var name = "BanglaPlex"
     override val hasMainPage = true
     override var lang = "bn"
