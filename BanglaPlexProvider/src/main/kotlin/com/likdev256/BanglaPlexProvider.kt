@@ -182,7 +182,7 @@ class BanglaPlexProvider : MainAPI() { // all providers must be an instance of M
 
     Log.d("embedlink", url)
 
-    val KEY = "4VqE3#N7zt&HEP^a"
+    val KEY = "e483fpzgr6p9"
 
     // Load the webpage using a headless browser or a JavaScript engine
     val webpage = app.get(url, referer = referer).text
