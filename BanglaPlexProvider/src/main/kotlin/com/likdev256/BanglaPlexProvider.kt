@@ -19,7 +19,7 @@ class BanglaPlexProvider : MainAPI() { // all providers must be an instance of M
     override var mainUrl = "https://banglaplex.art"
     override var name = "BanglaPlex"
     override val hasMainPage = true
-    override var lang = "bn"
+    override var lang = "hi"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
         TvType.Movie,
