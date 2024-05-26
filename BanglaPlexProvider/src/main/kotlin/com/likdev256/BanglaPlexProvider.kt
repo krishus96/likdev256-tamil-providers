@@ -171,65 +171,35 @@ class BanglaPlexProvider : MainAPI() { // all providers must be an instance of M
     }
 
     override suspend fun loadLinks(
-        data: String,
-        isCasting: Boolean,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ): Boolean {
-        val url = data.substringAfter(",")
-        val referer = data.substringBefore(",")
-        val main = getBaseUrl(url)
-        
-        //Log.d("embedlink", url)
-        val KEY = "4VqE3#N7zt&HEP^a"
+    data: String,
+    isCasting: Boolean,
+    subtitleCallback: (SubtitleFile) -> Unit,
+    callback: (ExtractorLink) -> Unit
+): Boolean {
+    val url = data.substringAfter(",")
+    val referer = data.substringBefore(",")
+    val main = getBaseUrl(url)
 
-        val master = Regex("MasterJS\\s*=\\s*'([^']+)").find(
-            app.get(
-                url,
-                referer = referer
-            ).text
-        )?.groupValues?.get(1)
-        val encData = AppUtils.tryParseJson<AESData>(base64Decode(master ?: return true))
-        val decrypt = cryptoAESHandler(encData ?: return true, KEY, false)
-        //Log.d("decrypt", decrypt)
+    val document = app.get(url, referer = referer).document
+    val master = document.selectFirst("script[src*='/js/player']")?.attr("src") ?: return false
+    val encData = AppUtils.tryParseJson<AESData>(base64Decode(app.get(master).text))
+    val decrypt = cryptoAESHandler(encData, KEY, false)
+    val source = Regex("sources:\\s*\\[\\s*\\{file:'(.+?)'\\}").find(decrypt)?.groupValues?.get(1)
 
-        val source = Regex("""sources:\s*\[\{"file":"([^"]+)""").find(decrypt)?.groupValues?.get(1)
-        val tracks = Regex("""tracks:\s*\[(.+)]""").find(decrypt)?.groupValues?.get(1)
-
-        // required
-        val headers = mapOf(
-            "Accept" to "*/*",
-            "Connection" to "keep-alive",
-            "Sec-Fetch-Dest" to "empty",
-            "Sec-Fetch-Mode" to "cors",
-            "Sec-Fetch-Site" to "cross-site",
-            "Origin" to main,
+    callback.invoke(
+        ExtractorLink(
+            name,
+            name,
+            source ?: return false,
+            main,
+            Qualities.Unknown.value,
+            headers = headers,
+            isM3u8 = true
         )
+    )
 
-        callback.invoke(
-            ExtractorLink(
-                name,
-                name,
-                source ?: return true,
-                "$main/",
-                Qualities.Unknown.value,
-                headers = headers,
-                isM3u8 = true
-            )
-        )
-
-        AppUtils.tryParseJson<List<Tracks>>("[$tracks]")
-            ?.filter { it.kind == "captions" }?.map { track ->
-                subtitleCallback.invoke(
-                    SubtitleFile(
-                        track.label ?: "",
-                        track.file ?: return@map null
-                    )
-                )
-            }
-        return true
-    }
-
+    return true
+}
 
     private fun cryptoAESHandler(
         data: AESData,
