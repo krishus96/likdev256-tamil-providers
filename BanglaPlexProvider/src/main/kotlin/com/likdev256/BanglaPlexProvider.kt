@@ -180,20 +180,49 @@ class BanglaPlexProvider : MainAPI() { // all providers must be an instance of M
     val referer = data.substringBefore(",")
     val main = getBaseUrl(url)
 
-     private val KEY = "4VqE3#N7zt&HEP^a"
+    Log.d("embedlink", url)
 
-    val document = app.get(url, referer = referer).document
-    val master = document.selectFirst("script[src*='/js/player']")?.attr("src") ?: return false
-   val encData = AppUtils.tryParseJson<AESData>(base64Decode(app.get(master).text))?.let { it }
-    val decrypt = cryptoAESHandler(encData, KEY, false)
-    val source = Regex("sources:\\s*\\[\\s*\\{file:'(.+?)'\\}").find(decrypt)?.groupValues?.get(1)
+    val KEY = "4VqE3#N7zt&HEP^a"
+
+    // Load the webpage using a headless browser or a JavaScript engine
+    val webpage = app.get(url, referer = referer).text
+
+    // Extract the encrypted data using a regular expression
+    val encryptedDataRegex = Regex("var encryptedData = '([^']+)';")
+    val encryptedData = encryptedDataRegex.find(webpage)?.groupValues?.get(1)
+
+    if (encryptedData == null) {
+        Log.e("loadLinks", "Failed to extract encrypted data")
+        return true
+    }
+
+    // Decrypt the encrypted data using AES
+    val decryptedData = cryptoAESHandler(AESData(encryptedData), KEY, false)
+
+    // Extract the streaming link from the decrypted data
+    val streamingLinkRegex = Regex("source:\\s*\"([^\"]+)\"")
+    val streamingLink = streamingLinkRegex.find(decryptedData)?.groupValues?.get(1)
+
+    if (streamingLink == null) {
+        Log.e("loadLinks", "Failed to extract streaming link")
+        return true
+    }
+
+    val headers = mapOf(
+        "Accept" to "*/*",
+        "Connection" to "keep-alive",
+        "Sec-Fetch-Dest" to "empty",
+        "Sec-Fetch-Mode" to "cors",
+        "Sec-Fetch-Site" to "cross-site",
+        "Origin" to main,
+    )
 
     callback.invoke(
         ExtractorLink(
             name,
             name,
-            source ?: return false,
-            main,
+            streamingLink,
+            "$main/",
             Qualities.Unknown.value,
             headers = headers,
             isM3u8 = true
