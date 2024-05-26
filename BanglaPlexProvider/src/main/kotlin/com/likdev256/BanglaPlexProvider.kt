@@ -180,9 +180,11 @@ class BanglaPlexProvider : MainAPI() { // all providers must be an instance of M
     val referer = data.substringBefore(",")
     val main = getBaseUrl(url)
 
+     private val KEY = "4VqE3#N7zt&HEP^a"
+
     val document = app.get(url, referer = referer).document
     val master = document.selectFirst("script[src*='/js/player']")?.attr("src") ?: return false
-    val encData = AppUtils.tryParseJson<AESData>(base64Decode(app.get(master).text))
+   val encData = AppUtils.tryParseJson<AESData>(base64Decode(app.get(master).text))?.let { it }
     val decrypt = cryptoAESHandler(encData, KEY, false)
     val source = Regex("sources:\\s*\\[\\s*\\{file:'(.+?)'\\}").find(decrypt)?.groupValues?.get(1)
 
